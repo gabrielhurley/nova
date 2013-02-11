@@ -879,6 +879,40 @@ class LibvirtConfigGuestInput(LibvirtConfigGuestDevice):
         return dev
 
 
+class LibvirtConfigGuestRNG(LibvirtConfigGuestDevice):
+
+    def __init__(self, **kwargs):
+        super(LibvirtConfigGuestRNG, self).__init__(root_name="rng",
+                                                    **kwargs)
+
+        self.model = "virtio"
+        self.protocol = None
+        self.listen = None
+
+    def format_dom(self):
+        dev = super(LibvirtConfigGuestRNG, self).format_dom()
+
+        dev.set("model", self.model)
+        backend = etree.Element("backend", model=self.type)
+
+        if self.type == "random":
+            if self.source:
+                backend.text = self.source
+        elif self.type == "egd":
+            backend.set("type", self.protocol)
+            if self.protocol == "udp":
+                source = etree.Element("source", mode="bind",
+                                       service=self.service)
+                backend.append(source)
+
+            source = etree.Element("source", mode="connect",
+                                   host=self.host, service=self.service)
+            backend.append(source)
+
+        dev.append(backend)
+        return dev
+
+
 class LibvirtConfigGuestGraphics(LibvirtConfigGuestDevice):
 
     def __init__(self, **kwargs):

@@ -255,6 +255,18 @@ libvirt_opts = [
                 help='A path to a device that will be used as source of '
                      'entropy on the host. Permitted options are: '
                      '/dev/random or /dev/hwrng'),
+    cfg.StrOpt('rng_type',
+               default=None,
+               help='Set to "random" in order to pass through host entropy '
+                    'from a file, "egd" in order to pass through entropy from '
+                    'an egd-compatible source',
+               deprecated_name='libvirt_rng_type',
+               deprecated_group='DEFAULT'),
+    cfg.StrOpt('rng_source',
+               default="",
+               help='Set to the file or socket providing the entropy stream',
+               deprecated_name='libvirt_rng_source',
+               deprecated_group='DEFAULT'),
     ]
 
 CONF = cfg.CONF
@@ -3420,6 +3432,15 @@ class LibvirtDriver(driver.ComputeDriver):
                 guest.add_device(bark)
             else:
                 raise exception.InvalidWatchdogAction(action=watchdog_action)
+
+        if CONF.libvirt.rng_type:
+            random = vconfig.LibvirtConfigGuestRNG()
+            random.type = CONF.libvirt.rng_type
+            random.source = CONF.libvirt.rng_source
+            random.protocol = "tcp"
+            random.host = "127.0.0.1"
+            random.service = "8000"
+            guest.add_device(random)
 
         return guest
 
