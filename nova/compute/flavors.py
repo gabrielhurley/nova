@@ -131,12 +131,12 @@ def create(name, memory, vcpus, root_gb, ephemeral_gb=0, flavorid=None,
         raise exception.InvalidInput(reason=msg)
 
     # Some attributes are positive ( > 0) integers
-    for option in ['memory_mb', 'vcpus']:
+    for option in ['root_gb', 'memory_mb', 'vcpus']:
         kwargs[option] = utils.validate_integer(kwargs[option], option, 1,
                                                 db.MAX_INT)
 
     # Some attributes are non-negative ( >= 0) integers
-    for option in ['root_gb', 'ephemeral_gb', 'swap']:
+    for option in ['ephemeral_gb', 'swap']:
         kwargs[option] = utils.validate_integer(kwargs[option], option, 0,
                                                 db.MAX_INT)
 

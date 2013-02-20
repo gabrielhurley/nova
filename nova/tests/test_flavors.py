@@ -444,11 +444,11 @@ class CreateInstanceTypeTest(test.TestCase):
         self.assertInvalidInput('flavor1', 64, db.MAX_INT + 1, 120)
         flavors.create('flavor1', 64, 1, 120)
 
-    def test_root_gb_must_be_nonnegative_db_integer(self):
+    def test_root_gb_must_be_positive_db_integer(self):
         self.assertInvalidInput('flavor1', 64, 1, 'foo')
         self.assertInvalidInput('flavor1', 64, 1, -1)
+        self.assertInvalidInput('flavor1', 64, 1, 0)
         self.assertInvalidInput('flavor1', 64, 1, db.MAX_INT + 1)
-        flavors.create('flavor1', 64, 1, 0)
         flavors.create('flavor2', 64, 1, 120)
 
     def test_ephemeral_gb_must_be_nonnegative_db_integer(self):
