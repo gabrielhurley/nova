@@ -1,3 +1,9 @@
+nova (2013.1-0ubuntu1+nebula) quantal; urgency=low
+
+  * Bump version for grizzly
+
+ -- Vishvananda Ishaya <vishvananda@gmail.com>  Tue, 23 Apr 2013 00:00:00 -0000
+
 nova (2012.2~f3-0ubuntu1+nebula) quantal; urgency=low
 
   * Update to nebula package name
