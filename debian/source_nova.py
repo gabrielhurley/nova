@@ -30,5 +30,5 @@ def add_info(report,ui):
 
 		attach_related_packages(report,
 				      ['python-nova', 'nova-common', 'nova-compute', 'nova-scheduler',
-					'nova-volume', 'nova-api', 'nova-network', 'nova-objectstore',
+					'nova-conductor', 'nova-api', 'nova-network', 'nova-objectstore',
 					'nova-doc', 'nova-cert'])

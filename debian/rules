@@ -54,7 +54,6 @@ get-orig-source-git:
 override_dh_install:
 	dh_install
 	chmod 440 $(CURDIR)/debian/nova-common/etc/sudoers.d/nova_sudoers
-	install -D -m 0664 $(CURDIR)/debian/nova-volume.default	$(CURDIR)/debian/nova-volume/etc/default/nova-volume
 	install -D -m 0655 $(CURDIR)/etc/nova/logging_sample.conf $(CURDIR)/debian/nova-common/etc/nova/logging.conf
 	for hypervisor in qemu kvm xen uml lxc; do \
 		install -D -m 0600 $(CURDIR)/debian/nova-compute-$${hypervisor}.conf $(CURDIR)/debian/nova-compute-$${hypervisor}/etc/nova/nova-compute.conf; \
@@ -62,7 +61,6 @@ override_dh_install:
 
 override_dh_fixperms:
 	dh_fixperms -Xnova_sudoers
-	dh_fixperms -Xnova_tgt
 	rm -f $(CURDIR)/debian/python-nova/usr/share/pyshared/nova/CA/.gitignore
 	rm -f $(CURDIR)/debian/python-nova/usr/share/pyshared/nova/CA/projects/.gitignore
 	rm -f $(CURDIR)/debian/python-nova/usr/share/pyshared/nova/CA/reqs/.gitignore

@@ -1,4 +1,4 @@
-/var/log/nova/nova-api-os-volume.log {
+/var/log/nova/nova-conductor.log {
     daily
     rotate 3
     size 100M

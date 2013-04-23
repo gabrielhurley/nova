@@ -1,7 +1,0 @@
-/var/log/nova/nova-volume.log {
-    daily
-    rotate 3
-    size 100M
-    compress
-    missingok
-}
