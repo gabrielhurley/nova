@@ -1,0 +1,7 @@
+/var/log/nova/nova-novncproxy.log {
+    daily
+    size 100M
+    rotate 3
+    compress
+    missingok
+}

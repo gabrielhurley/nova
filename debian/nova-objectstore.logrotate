@@ -1,0 +1,10 @@
+/var/log/nova/nova-objectstore.log {
+    daily
+    rotate 3
+    size 100M
+    compress
+    missingok
+    postrotate
+    restart nova-objectstore
+    endscript
+}

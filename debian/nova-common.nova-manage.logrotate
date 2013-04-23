@@ -1,0 +1,7 @@
+/var/log/nova/nova-manage.log {
+    daily
+    rotate 3
+    size 100M
+    compress
+    missingok
+}
