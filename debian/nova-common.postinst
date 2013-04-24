@@ -24,18 +24,8 @@ if [ "$1" = "configure" ]; then
       find /var/lib/nova/ -name 'rootfs' -prune -o \
         -group nogroup -a -user nova -exec chown nova:nova {} \;
     elif dpkg --compare-versions "$2" lt "2012.2~f1~20120503.13935-0ubuntu1"; then
-      # convert the /etc/nova/nova.conf to the new configuration
-      mv /etc/nova/nova.conf /etc/nova/nova.conf.upgrade
-      nova-manage config convert --infile=/etc/nova/nova.conf.upgrade \
-        --outfile=/etc/nova/nova.conf
-      chmod 600 /etc/nova/nova.conf
-      chown nova:nova /etc/nova/nova.conf
-      # nova.conf, too (if its there)
-      if [ -e /etc/nova/nova-compute.conf ] ; then
-        mv /etc/nova/nova-compute.conf /etc/nova/nova-compute.conf.upgrade
-        nova-manage config convert --infile=/etc/nova/nova-compute.conf.upgrade \
-          --outfile=/etc/nova/nova-compute.conf  
-      fi
+	  # convert the root_helper to rootwrap_config
+	  sed -e "s,^root_helper=.\+,rootwrap_config=/etc/nova/rootwrap.conf," -i /etc/nova/nova.conf
     fi	
 
     if [ "$(id -gn nova)"  = "nogroup" ]; then
@@ -65,8 +55,10 @@ if [ "$1" = "configure" ]; then
     chmod 0640 /etc/nova/policy.json
     chmod 0640 /etc/nova/api-paste.ini
     chmod 0750 /etc/nova
-    chmod 0440 /etc/sudoers.d/nova_sudoers
     chmod 0750 /var/log/nova
+    chown root:root /etc/nova/rootwrap.conf
+    chown root:root /etc/nova/rootwrap.d
+    chmod 0755 /etc/nova/rootwrap.d
 
     if ! grep -q sql_connection /etc/nova/nova.conf
     then
