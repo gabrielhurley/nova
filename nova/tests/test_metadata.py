@@ -186,7 +186,8 @@ class MetadataTestCase(test.TestCase):
         md = fake_InstanceMetadata(self.stubs, self.instance.obj_clone())
         data = md.get_ec2_metadata(version='2009-04-04')
         self.assertEqual(data['meta-data']['local-hostname'],
-            "%s.%s" % (self.instance['hostname'], CONF.dhcp_domain))
+            "%s.%s.%s" % (self.instance['hostname'], self.instance['project_id'],
+                          CONF.dhcp_domain))
 
     def test_format_instance_mapping(self):
         # Make sure that _format_instance_mappings works.

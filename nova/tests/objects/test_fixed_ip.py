@@ -40,6 +40,7 @@ fake_fixed_ip = {
     'leased': False,
     'reserved': False,
     'host': None,
+    'project_id': 'foo',
     }
 
 
@@ -268,6 +269,7 @@ class _TestFixedIPObject(object):
                 'instance_hostname': 'fake-host',
                 'instance_updated': datetime.datetime(1955, 11, 5),
                 'instance_created': datetime.datetime(1955, 11, 5),
+                'project_id': 'foo',
                 'allocated': True,
                 'leased': True,
                 }

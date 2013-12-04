@@ -22,13 +22,14 @@ from nova.objects import virtual_interface as vif_obj
 from nova.openstack.common import timeutils
 
 
-FIXED_IP_OPTIONAL_ATTRS = ['instance', 'network']
+FIXED_IP_OPTIONAL_ATTRS = ['instance', 'network', 'project_id']
 
 
 class FixedIP(obj_base.NovaPersistentObject, obj_base.NovaObject):
     # Version 1.0: Initial version
     # Version 1.1: Added virtual_interface field
-    VERSION = '1.1'
+    # Version 1.2: Added project_id field
+    VERSION = '1.2'
 
     fields = {
         'id': fields.IntegerField(),
@@ -44,6 +45,7 @@ class FixedIP(obj_base.NovaPersistentObject, obj_base.NovaObject):
         'network': fields.ObjectField('Network', nullable=True),
         'virtual_interface': fields.ObjectField('VirtualInterface',
                                                 nullable=True),
+        'project_id': fields.StringField(nullable=True),
         }
 
     @property
@@ -59,7 +61,7 @@ class FixedIP(obj_base.NovaPersistentObject, obj_base.NovaObject):
             expected_attrs = []
         for field in fixedip.fields:
             if field == 'virtual_interface':
-                # NOTE(danms): This field is only set when doing a
+                # NOTE(danms): This fields is only set when doing a
                 # FixedIPList.get_by_network() because it's a relatively
                 # special-case thing, so skip it here
                 continue
@@ -173,6 +175,7 @@ class FixedIPList(obj_base.ObjectListBase, obj_base.NovaObject):
     child_versions = {
         '1.0': '1.0',
         '1.1': '1.1',
+        '1.2': '1.2',
         }
 
     @obj_base.remotable_classmethod
@@ -222,7 +225,8 @@ class FixedIPList(obj_base.ObjectListBase, obj_base.NovaObject):
                           allocated=info['allocated'],
                           leased=info['leased'],
                           instance=inst,
-                          virtual_interface=vif)
+                          virtual_interface=vif,
+                          project_id=info['project_id'])
             fips.objects.append(fip)
         fips.obj_reset_changes()
         return fips

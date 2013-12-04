@@ -47,6 +47,7 @@ instances = {'00000000-0000-0000-0000-0000000000000000':
                   'host': 'fake_instance00',
                   'created_at': datetime.datetime(1955, 11, 5, 0, 0, 0),
                   'updated_at': datetime.datetime(1985, 10, 26, 1, 35, 0),
+                  'project_id': 'fake_project',
                   'hostname': 'fake_instance00'},
              '00000000-0000-0000-0000-0000000000000001':
                  {'id': 1,
@@ -54,6 +55,7 @@ instances = {'00000000-0000-0000-0000-0000000000000000':
                   'host': 'fake_instance01',
                   'created_at': datetime.datetime(1955, 11, 5, 0, 0, 0),
                   'updated_at': datetime.datetime(1985, 10, 26, 1, 35, 0),
+                  'project_id': 'fake_project',
                   'hostname': 'fake_instance01'}}
 
 
@@ -262,6 +264,7 @@ def get_associated(context, network_id, host=None, address=None):
             cleaned['instance_hostname'] = instance['hostname']
             cleaned['instance_updated'] = instance['updated_at']
             cleaned['instance_created'] = instance['created_at']
+            cleaned['project_id'] = instance['project_id']
             cleaned['allocated'] = datum['allocated']
             cleaned['leased'] = datum['leased']
             result.append(cleaned)
@@ -313,22 +316,25 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
     def test_update_dhcp_for_nw00(self):
         self.flags(use_single_default_gateway=True)
 
-        self.mox.StubOutWithMock(self.driver, 'write_to_file')
         self.mox.StubOutWithMock(fileutils, 'ensure_tree')
+        self.mox.StubOutWithMock(self.driver, 'write_to_file')
         self.mox.StubOutWithMock(os, 'chmod')
 
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
+        os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
         fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
+        self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
         os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
         os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
-
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.mox.ReplayAll()
 
         self.driver.update_dhcp(self.context, "eth0", networks[0])
@@ -340,18 +346,21 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
         self.mox.StubOutWithMock(fileutils, 'ensure_tree')
         self.mox.StubOutWithMock(os, 'chmod')
 
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
+        os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
         fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
-        fileutils.ensure_tree(mox.IgnoreArg())
+        self.driver.write_to_file(mox.IgnoreArg(), mox.IgnoreArg())
         os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
         os.chmod(mox.IgnoreArg(), mox.IgnoreArg())
-
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
+        fileutils.ensure_tree(mox.IgnoreArg())
         self.mox.ReplayAll()
 
         self.driver.update_dhcp(self.context, "eth0", networks[0])
@@ -360,11 +369,11 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
         self.flags(use_single_default_gateway=True)
 
         expected = (
-                "DE:AD:BE:EF:00:00,fake_instance00.novalocal,"
+                "DE:AD:BE:EF:00:00,fake_instance00.fake_project.novalocal,"
                 "192.168.0.100,net:NW-0\n"
-                "DE:AD:BE:EF:00:03,fake_instance01.novalocal,"
+                "DE:AD:BE:EF:00:03,fake_instance01.fake_project.novalocal,"
                 "192.168.1.101,net:NW-3\n"
-                "DE:AD:BE:EF:00:04,fake_instance00.novalocal,"
+                "DE:AD:BE:EF:00:04,fake_instance00.fake_project.novalocal,"
                 "192.168.0.102,net:NW-4"
         )
         actual_hosts = self.driver.get_dhcp_hosts(self.context, networks[0])
@@ -376,9 +385,9 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
         self.flags(host='fake_instance01')
 
         expected = (
-                "DE:AD:BE:EF:00:02,fake_instance01.novalocal,"
+                "DE:AD:BE:EF:00:02,fake_instance01.fake_project.novalocal,"
                 "192.168.0.101,net:NW-2\n"
-                "DE:AD:BE:EF:00:05,fake_instance01.novalocal,"
+                "DE:AD:BE:EF:00:05,fake_instance01.fake_project.novalocal,"
                 "192.168.1.102,net:NW-5"
         )
         actual_hosts = self.driver.get_dhcp_hosts(self.context, networks[1])
@@ -386,18 +395,18 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
 
     def test_get_dns_hosts_for_nw00(self):
         expected = (
-                "192.168.0.100\tfake_instance00.novalocal\n"
-                "192.168.1.101\tfake_instance01.novalocal\n"
-                "192.168.0.102\tfake_instance00.novalocal"
+                "192.168.0.100\tfake_instance00.fake_project.novalocal\n"
+                "192.168.1.101\tfake_instance01.fake_project.novalocal\n"
+                "192.168.0.102\tfake_instance00.fake_project.novalocal"
         )
         actual_hosts = self.driver.get_dns_hosts(self.context, networks[0])
         self.assertEqual(actual_hosts, expected)
 
     def test_get_dns_hosts_for_nw01(self):
         expected = (
-                "192.168.1.100\tfake_instance00.novalocal\n"
-                "192.168.0.101\tfake_instance01.novalocal\n"
-                "192.168.1.102\tfake_instance01.novalocal"
+                "192.168.1.100\tfake_instance00.fake_project.novalocal\n"
+                "192.168.0.101\tfake_instance01.fake_project.novalocal\n"
+                "192.168.1.102\tfake_instance01.fake_project.novalocal"
         )
         actual_hosts = self.driver.get_dns_hosts(self.context, networks[1])
         self.assertEqual(actual_hosts, expected)
@@ -458,7 +467,7 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
 
     def test_host_dhcp_without_default_gateway_network(self):
         expected = ','.join(['DE:AD:BE:EF:00:00',
-                             'fake_instance00.novalocal',
+                             'fake_instance00.fake_project.novalocal',
                              '192.168.0.100'])
         fixedip = fixed_ip_obj.FixedIPList.get_by_network(self.context,
                                                           {'id': 0})[0]
@@ -466,7 +475,7 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
         self.assertEqual(actual, expected)
 
     def test_host_dns_without_default_gateway_network(self):
-        expected = "192.168.0.100\tfake_instance00.novalocal"
+        expected = "192.168.0.100\tfake_instance00.fake_project.novalocal"
         fixedip = fixed_ip_obj.FixedIPList.get_by_network(self.context,
                                                           {'id': 0})[0]
         actual = self.driver._host_dns(fixedip)
@@ -593,7 +602,7 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
         default_domain = CONF.dhcp_domain
         for domain in ('', default_domain):
             executes = []
-            CONF.dhcp_domain = domain
+            self.flags(dhcp_domain=domain)
             linux_net.restart_dhcp(self.context, dev, network_ref)
             expected = ['env',
             'CONFIG_FILE=%s' % jsonutils.dumps(CONF.dhcpbridge_flagfile),
@@ -601,7 +610,6 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
             'dnsmasq',
             '--strict-order',
             '--bind-interfaces',
-            '--conf-file=%s' % CONF.dnsmasq_config_file,
             '--pid-file=%s' % linux_net._dhcp_file(dev, 'pid'),
             '--listen-address=%s' % network_ref['dhcp_server'],
             '--except-interface=lo',
@@ -615,7 +623,10 @@ class LinuxNetworkTestCase(test.NoDBTestCase):
             '--leasefile-ro']
 
             if CONF.dhcp_domain:
-                expected.append('--domain=%s' % CONF.dhcp_domain)
+                expected.append('--conf-file=%s' %
+                                linux_net._dhcp_file(dev, 'domain'))
+            else:
+                expected.append('--conf-file=%s' % CONF.dnsmasq_config_file)
 
             if extra_expected:
                 expected += extra_expected

@@ -918,6 +918,26 @@ def get_dns_hosts(context, network_ref):
     return '\n'.join(hosts)
 
 
+def get_domain_opts(context, network_ref):
+    """Get network's hosts config in dhcp-opts format."""
+    opts = []
+    host = None
+    if network_ref['multi_host']:
+        host = CONF.host
+    for fixedip in fixed_ip_obj.FixedIPList.get_by_network(context,
+                                                           network_ref,
+                                                           host=host):
+        if fixedip.allocated:
+            opts.append('domain=%s.%s,%s/32' % (fixedip.project_id,
+                                                CONF.dhcp_domain,
+                                                fixedip.address))
+    # NOTE(vish): Only the last conf file on the command line is
+    #             read, so include the original one in this file.
+    if CONF.dnsmasq_config_file:
+        opts.append('conf-file=%s' % CONF.dnsmasq_config_file)
+    return '\n'.join(opts)
+
+
 def _add_dnsmasq_accept_rules(dev):
     """Allow DHCP and DNS traffic through to dnsmasq."""
     table = iptables_manager.ipv4['filter']
@@ -1012,7 +1032,7 @@ def update_dhcp_hostfile_with_text(dev, hosts_text):
     write_to_file(conffile, hosts_text)
 
 
-def kill_dhcp(dev):
+def _kill_dnsmasq(dev):
     pid = _dnsmasq_pid_for(dev)
     if pid:
         # Check that the process exists and looks like a dnsmasq process
@@ -1023,6 +1043,10 @@ def kill_dhcp(dev):
             _execute('kill', '-9', pid, run_as_root=True)
         else:
             LOG.debug(_('Pid %d is stale, skip killing dnsmasq'), pid)
+
+
+def kill_dhcp(dev):
+    _kill_dnsmasq(dev)
     _remove_dnsmasq_accept_rules(dev)
     _remove_dhcp_mangle_rule(dev)
 
@@ -1040,6 +1064,12 @@ def restart_dhcp(context, dev, network_ref):
     """
     conffile = _dhcp_file(dev, 'conf')
 
+    if CONF.dhcp_domain:
+        # NOTE(vish): set domain per local ip address.
+        domainfile = _dhcp_file(dev, 'domain')
+        write_to_file(domainfile, get_domain_opts(context, network_ref))
+        os.chmod(domainfile, 0644)
+
     if CONF.use_single_default_gateway:
         # NOTE(vish): this will have serious performance implications if we
         #             are not in multi_host mode.
@@ -1052,23 +1082,8 @@ def restart_dhcp(context, dev, network_ref):
     # Make sure dnsmasq can actually read it (it setuid()s to "nobody")
     os.chmod(conffile, 0o644)
 
-    pid = _dnsmasq_pid_for(dev)
-
-    # if dnsmasq is already running, then tell it to reload
-    if pid:
-        out, _err = _execute('cat', '/proc/%d/cmdline' % pid,
-                             check_exit_code=False)
-        # Using symlinks can cause problems here so just compare the name
-        # of the file itself
-        if conffile.split('/')[-1] in out:
-            try:
-                _execute('kill', '-HUP', pid, run_as_root=True)
-                _add_dnsmasq_accept_rules(dev)
-                return
-            except Exception as exc:  # pylint: disable=W0703
-                LOG.error(_('Hupping dnsmasq threw %s'), exc)
-        else:
-            LOG.debug(_('Pid %d is stale, relaunching dnsmasq'), pid)
+    # NOTE(vish): HUP doesn't work with project specific domain changes
+    _kill_dnsmasq(dev)
 
     cmd = ['env',
            'CONFIG_FILE=%s' % jsonutils.dumps(CONF.dhcpbridge_flagfile),
@@ -1076,7 +1091,6 @@ def restart_dhcp(context, dev, network_ref):
            'dnsmasq',
            '--strict-order',
            '--bind-interfaces',
-           '--conf-file=%s' % CONF.dnsmasq_config_file,
            '--pid-file=%s' % _dhcp_file(dev, 'pid'),
            '--listen-address=%s' % network_ref['dhcp_server'],
            '--except-interface=lo',
@@ -1093,7 +1107,9 @@ def restart_dhcp(context, dev, network_ref):
     # dnsmasq currently gives an error for an empty domain,
     # rather than ignoring.  So only specify it if defined.
     if CONF.dhcp_domain:
-        cmd.append('--domain=%s' % CONF.dhcp_domain)
+        cmd.append('--conf-file=%s' % _dhcp_file(dev, 'domain'))
+    else:
+        cmd.append('--conf-file=%s' % CONF.dnsmasq_config_file)
 
     dns_servers = set(CONF.dns_server)
     if CONF.use_network_dns_servers:
@@ -1176,21 +1192,24 @@ def _host_dhcp_network(data):
 def _host_dhcp(fixedip):
     """Return a host string for an address in dhcp-host format."""
     if CONF.use_single_default_gateway:
-        return '%s,%s.%s,%s,%s' % (fixedip.virtual_interface.address,
+        return '%s,%s.%s.%s,%s,%s' % (fixedip.virtual_interface.address,
                                fixedip.instance.hostname,
+                               fixedip.project_id,
                                CONF.dhcp_domain,
                                fixedip.address,
                                'net:' + _host_dhcp_network(fixedip))
     else:
-        return '%s,%s.%s,%s' % (fixedip.virtual_interface.address,
+        return '%s,%s.%s.%s,%s' % (fixedip.virtual_interface.address,
                                fixedip.instance.hostname,
+                               fixedip.project_id,
                                CONF.dhcp_domain,
                                fixedip.address)
 
 
 def _host_dns(fixedip):
-    return '%s\t%s.%s' % (fixedip.address,
+    return '%s\t%s.%s.%s' % (fixedip.address,
                           fixedip.instance.hostname,
+                          fixedip.project_id,
                           CONF.dhcp_domain)
 
 
