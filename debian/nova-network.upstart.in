@@ -14,4 +14,12 @@ pre-start script
 	chown nova:root /var/lock/nova/
 end script
 
-exec su -s /bin/sh -c "exec nova-network --config-file=/etc/nova/nova.conf" nova
+script
+    set +e
+    runcon -t nova-network_t /bin/true 2>&1 >/dev/null
+    if [ $? -eq 0 ]; then
+        exec su -s /bin/sh -c "exec runcon -t nova-network_t nova-network --config-file=/etc/nova/nova.conf" nova
+    else
+        exec su -s /bin/sh -c "exec nova-network --config-file=/etc/nova/nova.conf" nova
+    fi
+end script
