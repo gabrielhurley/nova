@@ -3,5 +3,7 @@
     rotate 3
     size 100M
     compress
+    delaycompress
+    notifempty
     missingok
 }
