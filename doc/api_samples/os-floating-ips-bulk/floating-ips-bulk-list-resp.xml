@@ -5,6 +5,7 @@
     <instance_uuid>None</instance_uuid>
     <project_id>None</project_id>
     <pool>nova</pool>
+    <id>1</id>
     <address>10.10.10.1</address>
   </item>
   <item>
@@ -12,6 +13,7 @@
     <instance_uuid>None</instance_uuid>
     <project_id>None</project_id>
     <pool>nova</pool>
+    <id>2</id>
     <address>10.10.10.2</address>
   </item>
   <item>
@@ -19,6 +21,7 @@
     <instance_uuid>None</instance_uuid>
     <project_id>None</project_id>
     <pool>nova</pool>
+    <id>3</id>
     <address>10.10.10.3</address>
   </item>
 </floating_ip_info>

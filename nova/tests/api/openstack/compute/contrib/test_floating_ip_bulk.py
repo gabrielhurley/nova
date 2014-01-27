@@ -68,11 +68,13 @@ class FloatingIPBulk(test.TestCase):
         res_dict = self.controller.index(req)
 
         ip_info = [{'address': str(ip_addr),
+                    'id': str(ip_id + 1),
                     'pool': CONF.default_floating_pool,
                     'interface': CONF.public_interface,
                     'project_id': None,
                     'instance_uuid': None}
-                   for ip_addr in netaddr.IPNetwork(ip_range).iter_hosts()]
+                   for ip_id, ip_addr in
+                   enumerate(netaddr.IPNetwork(ip_range).iter_hosts())]
         response = {'floating_ip_info': ip_info}
 
         self.assertEqual(res_dict, response)

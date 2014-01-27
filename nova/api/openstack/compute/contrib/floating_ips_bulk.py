@@ -68,6 +68,7 @@ class FloatingIPBulkController(object):
                 instance_uuid = fixed_ip['instance_uuid']
 
             result = {'address': floating_ip['address'],
+                      'id': str(floating_ip['id']),
                       'pool': floating_ip['pool'],
                       'interface': floating_ip['interface'],
                       'project_id': floating_ip['project_id'],
