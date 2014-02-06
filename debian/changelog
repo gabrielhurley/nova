@@ -1,3 +1,9 @@
+nova (2013.1-0ubuntu1+nebula2) quantal; urgency=low
+
+  * Bumping version for 1.2
+
+ -- Kevin Tegtmeier <kevin.tegtmeier@nebula.com>  Thu, 06 Feb 2014 20:37:39 +0000
+
 nova (2013.1-0ubuntu1+nebula) quantal; urgency=low
 
   * Bump version for grizzly
