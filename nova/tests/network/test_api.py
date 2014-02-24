@@ -15,6 +15,7 @@
 
 """Tests for network API."""
 
+import contextlib
 import itertools
 import random
 
@@ -33,7 +34,9 @@ from nova.network import rpcapi as network_rpcapi
 from nova.objects import fixed_ip as fixed_ip_obj
 from nova import policy
 from nova import test
+from nova.tests import fake_instance
 from nova.tests.objects import test_fixed_ip
+from nova.tests.objects import test_flavor
 from nova import utils
 
 FAKE_UUID = 'a47ae74e-ab08-547f-9eee-ffd23fc46c16'
@@ -295,6 +298,48 @@ class ApiTestCase(test.TestCase):
         fip = self.network_api.get_fixed_ip_by_address(self.context,
                                                        'fake-addr')
         self.assertIsInstance(fip, fixed_ip_obj.FixedIP)
+
+    def _test_refresh_cache(self, method, *args, **kwargs):
+        # This test verifies that no call to get_instance_nw_info() is made
+        # from the @refresh_cache decorator for the tested method.
+        with contextlib.nested(
+            mock.patch.object(self.network_api.network_rpcapi, method),
+            mock.patch.object(self.network_api.network_rpcapi,
+                              'get_instance_nw_info'),
+        ) as (
+            method_mock, nwinfo_mock
+        ):
+            method_mock.return_value = network_model.NetworkInfo([])
+            getattr(self.network_api, method)(*args, **kwargs)
+            self.assertFalse(nwinfo_mock.called)
+
+    def test_allocate_for_instance_refresh_cache(self):
+        sys_meta = flavors.save_flavor_info({}, test_flavor.fake_flavor)
+        instance = fake_instance.fake_instance_obj(
+            self.context, expected_attrs=['system_metadata'],
+            system_metadata=sys_meta)
+        vpn = 'fake-vpn'
+        requested_networks = 'fake-networks'
+        self._test_refresh_cache('allocate_for_instance', self.context,
+                                 instance, vpn, requested_networks)
+
+    def test_add_fixed_ip_to_instance_refresh_cache(self):
+        sys_meta = flavors.save_flavor_info({}, test_flavor.fake_flavor)
+        instance = fake_instance.fake_instance_obj(
+            self.context, expected_attrs=['system_metadata'],
+            system_metadata=sys_meta)
+        network_id = 'fake-network-id'
+        self._test_refresh_cache('add_fixed_ip_to_instance', self.context,
+                                 instance, network_id)
+
+    def test_remove_fixed_ip_from_instance_refresh_cache(self):
+        sys_meta = flavors.save_flavor_info({}, test_flavor.fake_flavor)
+        instance = fake_instance.fake_instance_obj(
+            self.context, expected_attrs=['system_metadata'],
+            system_metadata=sys_meta)
+        address = 'fake-address'
+        self._test_refresh_cache('remove_fixed_ip_from_instance', self.context,
+                                 instance, address)
 
 
 class TestUpdateInstanceCache(test.TestCase):
