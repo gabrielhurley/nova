@@ -12,6 +12,8 @@ Build-Depends-Indep:
  openssl,
  python-setuptools,
  python-oslosphinx,
+ python-oslo.config,
+ python-oslo.messaging,
  python-sphinx (>> 1.0),
  python-distutils-extra,
  python-gflags,
@@ -61,6 +63,8 @@ Package: python-nova
 Architecture: all
 Section: python
 Depends: ${python:Depends},
+ python-oslo.config,
+ python-oslo.messaging,
  openssh-client,
  openssl,
  python-boto,
