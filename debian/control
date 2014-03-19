@@ -5,13 +5,15 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Openstack Maintainers <openstack@lists.launchpad.net>
 Uploaders: Soren Hansen <soren@ubuntu.com>, Thomas Goirand <zigo@debian.org>
 Build-Depends: debhelper (>= 7.0.50),
- python-all (>= 2.6),
- python-all-dev (>= 2.6.6-3~) | python-support,
+ python-all (>= 2.7.3-0ubuntu2.2),
+ python-all-dev (>= 2.7.3-0ubuntu2.2),
+ python-dev (>= 2.7.3-0ubuntu2.2),
  python-subunit,
  python-testtools,
  testrepository,
  python-pyasn1,
  python-mock,
+ python-neutronclient,
 Build-Depends-Indep:
  openssh-client,
  openssl,
@@ -53,7 +55,6 @@ Build-Depends-Indep:
  python-crypto,
  python-iso8601,
  python-kombu,
- python-quantumclient,
  python-glanceclient,
  python-cinderclient,
  pep8
