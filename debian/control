@@ -41,7 +41,6 @@ Build-Depends-Indep:
  python-tempita,
  python-migrate,
  python-netaddr,
- python-glance,
  python-paramiko,
  python-novaclient,
  python-lockfile,
@@ -95,7 +94,6 @@ Depends: ${python:Depends},
  python-tempita,
  python-migrate,
  python-netaddr,
- python-glance,
  python-glanceclient,
  python-cinderclient,
  python-novaclient,
@@ -106,7 +104,7 @@ Depends: ${python:Depends},
  python-daemon,
  python-suds,
  python-iso8601,
- python-keystone,
+ python-keystoneclient,
  python-kombu,
  sudo,
  ${misc:Depends}
@@ -136,7 +134,7 @@ Package: nova-common
 Architecture: all
 Depends: python-amqplib, python-nova (= ${binary:Version}), ${python:Depends}, ${misc:Depends}, adduser
 Provides: ${python:Provides}
-Recommends: python-keystone, python-glanceclient
+Recommends: python-keystoneclient, python-glanceclient
 Description: OpenStack Compute - common files
  OpenStack is a reliable cloud infrastructure. Its mission is to produce
  the ubiquitous cloud computing platform that will meet the needs of public
