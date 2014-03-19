@@ -67,7 +67,7 @@ override_dh_fixperms:
 
 ifeq (,$(findstring nocheck, $(DEB_BUILD_OPTIONS)))
 override_dh_auto_test:
-	testr init && testr run --parallel
+	testr init && python -m nova.openstack.common.lockutils testr run --parallel
 endif
 
 override_dh_installinit:
