@@ -11,6 +11,7 @@ Build-Depends: debhelper (>= 7.0.50),
  python-testtools,
  testrepository,
  python-pyasn1,
+ python-mock,
 Build-Depends-Indep:
  openssh-client,
  openssl,
