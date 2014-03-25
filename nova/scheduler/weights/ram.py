@@ -44,4 +44,5 @@ class RAMWeigher(weights.BaseHostWeigher):
 
     def _weigh_object(self, host_state, weight_properties):
         """Higher weights win.  We want spreading to be the default."""
-        return host_state.free_ram_mb
+        # use least used ram instead of most free ram
+        return - (host_state.total_usable_ram_mb - host_state.free_ram_mb)

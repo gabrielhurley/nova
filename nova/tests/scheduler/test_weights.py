@@ -105,7 +105,8 @@ class RamWeigherTestCase(test.NoDBTestCase):
     def test_ram_filter_negative(self):
         self.flags(ram_weight_multiplier=1.0)
         hostinfo_list = self._get_all_hosts()
-        host_attr = {'id': 100, 'memory_mb': 8192, 'free_ram_mb': -512}
+        host_attr = {'id': 100, 'total_usable_ram_mb': 8192,
+                     'free_ram_mb': -512}
         host_state = fakes.FakeHostState('negative', 'negative', host_attr)
         hostinfo_list = list(hostinfo_list) + [host_state]
 
