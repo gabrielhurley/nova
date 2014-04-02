@@ -1,3 +1,21 @@
+nova (2013.1-0ubuntu1+nebula5) quantal; urgency=low
+
+  * Bump version gateway fix
+
+ -- Vishvananda Ishaya <vishvananda@gmail.com>  Tue, 25 Feb 2014 00:00:00 +0000
+
+nova (2013.1-0ubuntu1+nebula4) quantal; urgency=low
+
+  * Bump version for native io fix
+
+ -- Vishvananda Ishaya <vishvananda@gmail.com>  Tue, 12 Feb 2014 00:00:00 +0000
+
+nova (2013.1-0ubuntu1+nebula3) quantal; urgency=low
+
+  * Bump version for domain fix
+
+ -- Vishvananda Ishaya <vishvananda@gmail.com>  Tue, 11 Feb 2014 00:00:00 +0000
+
 nova (2013.1-0ubuntu1+nebula2) quantal; urgency=low
 
   * Bumping version for 1.2
