@@ -453,7 +453,7 @@ class LibvirtConfigGuestDiskTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(xml, """
             <disk type="block" device="cdrom">
-              <driver name="qemu"/>
+              <driver name="qemu" io="native"/>
               <source dev="/tmp/hello"/>
               <target bus="ide" dev="/dev/hdc"/>
             </disk>""")
@@ -487,7 +487,7 @@ class LibvirtConfigGuestDiskTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(xml, """
             <disk type="network" device="disk">
-              <driver name="qemu" type="qcow2"/>
+              <driver name="qemu" type="qcow2" io="native"/>
               <source name="foo.bar.com" protocol="iscsi"/>
               <target bus="ide" dev="/dev/hda"/>
             </disk>""")
@@ -525,7 +525,7 @@ class LibvirtConfigGuestDiskTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(xml, """
             <disk type="network" device="disk">
-              <driver name="qemu" type="raw"/>
+              <driver name="qemu" type="raw" io="native"/>
               <source protocol="nbd">
                 <host name="foo.bar.com"/>
               </source>
@@ -547,7 +547,7 @@ class LibvirtConfigGuestDiskTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(xml, """
             <disk type="network" device="disk">
-              <driver name="qemu" type="raw"/>
+              <driver name="qemu" type="raw" io="native"/>
               <source name="pool/image" protocol="rbd">
                 <host name="foo.bar.com"/>
                 <host name="::1" port="123"/>
@@ -572,7 +572,7 @@ class LibvirtConfigGuestDiskTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(xml, """
             <disk type="network" device="disk">
-              <driver name="qemu" type="raw"/>
+              <driver name="qemu" type="raw" io="native"/>
               <source name="pool/image" protocol="rbd"/>
               <auth username="foo">
                 <secret type="ceph"
