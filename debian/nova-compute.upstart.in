@@ -23,8 +23,8 @@ script
     set +e
     runcon -t nova-compute_t /bin/true 2>&1 >/dev/null
     if [ $? -eq 0 ]; then
-        exec su -s /bin/sh -c "exec runcon -t nova-compute_t nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf" nova
+        start-stop-daemon --start --chuid nova --exec /usr/bin/runcon -- -t nova-compute_t /usr/bin/nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf
     else
-        exec su -s /bin/sh -c "exec nova-compute --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf" nova
+        start-stop-daemon --start --chuid nova --exec /usr/bin/nova-compute -- --config-file=/etc/nova/nova.conf --config-file=/etc/nova/nova-compute.conf
     fi
 end script
