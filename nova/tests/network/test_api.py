@@ -341,6 +341,13 @@ class ApiTestCase(test.TestCase):
         self._test_refresh_cache('remove_fixed_ip_from_instance', self.context,
                                  instance, address)
 
+    @mock.patch('nova.db.fixed_ip_get_by_address')
+    def test_get_fixed_ip_by_address(self, fip_get):
+        fip_get.return_value = test_fixed_ip.fake_fixed_ip
+        fip = self.network_api.get_fixed_ip_by_address(self.context,
+                                                       'fake-addr')
+        self.assertIsInstance(fip, fixed_ip_obj.FixedIP)
+
 
 class TestUpdateInstanceCache(test.TestCase):
     def setUp(self):
