@@ -1466,7 +1466,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
                            network,
                            mac_address,
                            network.get('mtu'))
-            iface = 'vlan%s' % vlan
+            iface = 'bond0.%s' % vlan
         else:
             iface = CONF.flat_interface or network['bridge_interface']
             LinuxBridgeInterfaceDriver.ensure_bridge(
@@ -1483,7 +1483,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
     def unplug(self, network, gateway=True):
         vlan = network.get('vlan')
         if vlan is not None:
-            iface = 'vlan%s' % vlan
+            iface = 'bond0.%s' % vlan
             LinuxBridgeInterfaceDriver.remove_vlan_bridge(vlan,
                                                           network['bridge'])
         else:
@@ -1521,7 +1521,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
     @utils.synchronized('lock_vlan', external=True)
     def ensure_vlan(vlan_num, bridge_interface, mac_address=None, mtu=None):
         """Create a vlan unless it already exists."""
-        interface = 'vlan%s' % vlan_num
+        interface = 'bond0.%s' % vlan_num
         if not device_exists(interface):
             LOG.debug(_('Starting VLAN interface %s'), interface)
             _execute('ip', 'link', 'add', 'link', bridge_interface,
@@ -1545,7 +1545,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
     @utils.synchronized('lock_vlan', external=True)
     def remove_vlan(vlan_num):
         """Delete a vlan."""
-        vlan_interface = 'vlan%s' % vlan_num
+        vlan_interface = 'bond0.%s' % vlan_num
         delete_net_dev(vlan_interface)
 
     @staticmethod

@@ -1174,6 +1174,8 @@ class NetworkManager(manager.Manager):
                 nets = []
             num_used_nets = len(nets)
             used_subnets = [net.cidr for net in nets]
+            if hasattr(self, 'reserved_subnets'):
+                used_subnets.extend(self.reserved_subnets)
 
             def find_next(subnet):
                 next_subnet = subnet.next()
@@ -1268,8 +1270,8 @@ class NetworkManager(manager.Manager):
 
                 net.netmask_v6 = str(subnet_v6.netmask)
 
+            vlan = kwargs.get('vlan', None)
             if CONF.network_manager == 'nova.network.manager.VlanManager':
-                vlan = kwargs.get('vlan', None)
                 if not vlan:
                     index_vlan = index + num_used_nets
                     vlan = kwargs['vlan_start'] + index_vlan
@@ -1281,7 +1283,6 @@ class NetworkManager(manager.Manager):
 
                 net.vpn_private_address = str(subnet_v4[2])
                 net.dhcp_start = str(subnet_v4[3])
-                net.vlan = vlan
                 net.bridge = 'br%s' % vlan
 
                 # NOTE(vish): This makes ports unique across the cloud, a more
@@ -1289,6 +1290,7 @@ class NetworkManager(manager.Manager):
                 index_vpn = index + num_used_nets
                 net.vpn_public_port = kwargs['vpn_start'] + index_vpn
 
+            net.vlan = vlan
             net.create()
             networks.objects.append(net)
 
@@ -2024,3 +2026,140 @@ class VlanManager(RPCAllocateFixedIP, floating_ips.FloatingIP, NetworkManager):
         """Number of reserved ips at the top of the range."""
         parent_reserved = super(VlanManager, self)._top_reserved_ips
         return parent_reserved + CONF.cnt_vpn_clients
+
+
+nebula_opts = [
+    cfg.IntOpt('default_vlan',
+               default=20,
+               help='Vlan to force non-vlan networks into'),
+    cfg.ListOpt('reserved_vlans',
+               default=[],
+               help='Vlans reserved by the system'),
+    cfg.ListOpt('reserved_ranges',
+               default=[],
+               help='Ip ranges reserved by the system'),
+    ]
+
+
+CONF.register_opts(nebula_opts)
+
+
+class NebulaManager(FlatDHCPManager):
+    def __init__(self, network_driver=None, *args, **kwargs):
+        super(NebulaManager, self).__init__(network_driver=network_driver,
+                                          *args, **kwargs)
+        self.reserved_subnets = [netaddr.IPNetwork(subnet)
+                                 for subnet in CONF.reserved_ranges]
+
+    def _get_networks_by_uuids(self, context, network_uuids):
+        networks = network_obj.NetworkList.get_by_uuids(
+            context, network_uuids, project_only="allow_none")
+        networks.sort(key=lambda x: network_uuids.index(x.uuid))
+        # NOTE(vish): filter out host only networks
+        return [network for network in networks if network.share_address]
+
+    def _get_networks_for_instance(self, context, instance_id, project_id,
+                                   requested_networks=None):
+        """Determine & return which networks an instance should connect to."""
+        if requested_networks is not None and len(requested_networks) != 0:
+            network_uuids = [uuid for (uuid, fixed_ip) in requested_networks]
+            networks = self._get_networks_by_uuids(context, network_uuids)
+        else:
+            try:
+                networks = network_obj.NetworkList.get_all(context)
+            except exception.NoNetworksFound:
+                return []
+            # NOTE(vish): return project networks if there are any, otherwise, return
+            #             all networks.
+            project_networks = [network for network in networks if network.project_id]
+            networks = project_networks or networks
+            # NOTE(vish): filter out host only networks
+            networks = [network for network in networks if network.share_address]
+        return networks
+
+    @staticmethod
+    def _get_bridges_and_addresses():
+        results = {}
+        out, err = utils.execute('ip', 'addr', 'show', 'scope', 'global')
+        for line in out.split('\n'):
+            fields = line.split()
+            if fields and len(fields) > 1 and fields[0].endswith(':'):
+                if fields[1].startswith('guest'):
+                    bridge = fields[1][:-1]
+                else:
+                    bridge = None
+            elif fields and fields[0] == 'inet':
+                address, _sep, _prefix = fields[1].partition('/')
+                if bridge:
+                    results[bridge] = address
+                bridge = None
+        return results
+
+    @periodic_task.periodic_task
+    @utils.synchronized('setup_network', external=True)
+    def _sync_networks(self, context):
+        bridge_addresses = self._get_bridges_and_addresses()
+        existing_bridges = set(bridge_addresses.keys())
+        for network in network_obj.NetworkList.get_by_host(context, self.host):
+            if network['bridge'] in existing_bridges:
+                existing_bridges.remove(network['bridge'])
+            else:
+                LOG.debug(_('Creating network for %s'), network['bridge'])
+                self._setup_network_on_host(context, network)
+                if CONF.update_dns_entries:
+                    dev = self.driver.get_dev(network)
+                    self.driver.update_dns(context, dev, network)
+        for bridge in existing_bridges:
+            LOG.debug(_('Deleting network for %s'), bridge)
+            self.driver.kill_dhcp(bridge)
+            def_vlan = CONF.default_vlan
+            network = {
+                "vlan": def_vlan if bridge == 'guest0' else int(bridge[5:]),
+                "bridge": bridge,
+                "share_address": True,
+                "dhcp_server": bridge_addresses[bridge],
+            }
+            self.l3driver.remove_gateway(network)
+
+    def create_networks(self, context, **kwargs):
+        vlan = 0
+        # NOTE(vish): support vlan_start for compatibility
+        if 'vlan_start' in kwargs:
+            vlan = kwargs['vlan_start']
+            del kwargs['vlan_start']
+        vlan = int(kwargs.get('vlan') or vlan)
+        reserved_vlans = [int(item) for item in CONF.reserved_vlans]
+        if vlan > 4094 or vlan in reserved_vlans:
+            raise exception.DuplicateVlan(vlan=vlan)
+        if not vlan:
+            # NOTE(vish): force no vlan to default guest vlan
+            vlan = CONF.default_vlan
+        # NOTE(vish): force bridge name to expected name
+        if vlan == CONF.default_vlan:
+            # NOTE(vish): compatibility with old versions
+            kwargs['bridge'] = 'guest0'
+        else:
+            kwargs['bridge'] = 'guest%s' % vlan
+        kwargs['vlan'] = vlan
+        # NOTE(vish): this is overridden in linux_net anyway, but this makes
+        #             the proper value appear in the network-show command
+        kwargs['bridge_interface'] = CONF.vlan_interface
+        # NOTE(vish): force multi-host networks
+        kwargs['multi_host'] = True
+        # NOTE(vish): default share_address to True
+        kwargs.setdefault('share_address', True)
+        # NOTE(vish): default enable_dhcp to share_address
+        kwargs.setdefault('enable_dhcp', kwargs['share_address'])
+        # NOTE(vish): force setting dhcp_server for routed guest networks
+        host_only = not strutils.bool_from_string(kwargs['share_address'])
+        if 'gateway' in kwargs and host_only:
+            network = netaddr.IPNetwork(kwargs['cidr'])
+            gateway = netaddr.IPNetwork(kwargs['gateway'])
+            if 'allowed_start' in kwargs:
+                dhcp_server = netaddr.IPNetwork(kwargs['allowed_start'])
+            else:
+                dhcp_server = network[1]
+            if dhcp_server == gateway:
+                dhcp_server = gateway + 1
+            kwargs['dhcp_server'] = str(dhcp_server)
+        return super(NebulaManager, self).create_networks(context, **kwargs)

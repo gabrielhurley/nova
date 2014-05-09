@@ -2705,7 +2705,9 @@ def network_get_all_by_host(context, host):
     # NOTE(vish): return networks that have host set
     #             or that have a fixed ip with host set
     #             or that have an instance with host set
+    #             or that are not sharing an address (host networks)
     host_filter = or_(models.Network.host == host,
+                      models.Network.share_address == False,
                       models.Network.id.in_(fixed_ip_query.subquery()))
     return _network_get_query(context, session=session).\
                        filter(host_filter).\

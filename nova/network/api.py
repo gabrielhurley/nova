@@ -131,7 +131,14 @@ class API(base.Base):
         belong to the user's project.
         """
         try:
-            return self.db.network_get_all(context, project_only=True)
+            # NOTE(vish): show project and global networks
+            networks = self.db.network_get_all(context,
+                                               project_only="allow_none")
+            if not context.is_admin:
+                # NOTE(vish): filter host only networks
+                networks = [network for network in networks
+                            if network.share_address]
+            return networks
         except exception.NoNetworksFound:
             return []
 
