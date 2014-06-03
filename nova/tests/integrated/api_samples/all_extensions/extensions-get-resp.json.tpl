@@ -481,6 +481,14 @@
             "updated": "%(timestamp)s"
         },
         {
+            "alias": "os-extended-networks",
+            "description": "%(text)s",
+            "links": [],
+            "name": "ExtendedNetworks",
+            "namespace": "http://docs.openstack.org/compute/ext/extended_networks/api/v2",
+            "updated": "%(timestamp)s"
+        },
+        {
             "alias": "os-extended-quotas",
             "description": "%(text)s",
             "links": [],

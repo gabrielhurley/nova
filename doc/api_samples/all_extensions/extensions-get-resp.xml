@@ -118,6 +118,9 @@
   <extension alias="os-extended-floating-ips" updated="2013-04-19T00:00:00+00:00" namespace="http://docs.openstack.org/compute/ext/extended_floating_ips/api/v2" name="ExtendedFloatingIps">
     <description>Adds optional fixed_address to the add floating IP command.</description>
   </extension>
+  <extension alias="os-extended-networks" updated="2014-05-09T00:00:00+00:00" namespace="http://docs.openstack.org/compute/ext/extended_networks/api/v2" name="ExtendedNetworks">
+    <description>Adds additional fields to networks</description>
+  </extension>
   <extension alias="os-extended-quotas" updated="2013-06-09T00:00:00+00:00" namespace="http://docs.openstack.org/compute/ext/extended_quotas/api/v1.1" name="ExtendedQuotas">
     <description>Adds ability for admins to delete quota
     and optionally force the update Quota command.
