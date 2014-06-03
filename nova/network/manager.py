@@ -1026,7 +1026,7 @@ class NetworkManager(manager.Manager):
                     continue
                 kwargs[key] = int(value)
             except ValueError:
-                raise ValueError(_("%s must be an integer") % key)
+                raise exception.InvalidIntValue(key=key)
 
     def create_networks(self, context,
                         label, cidr=None, multi_host=None, num_networks=None,
@@ -1059,7 +1059,7 @@ class NetworkManager(manager.Manager):
 
         # Size of "label" column in nova.networks is 255, hence the restriction
         if len(label) > 255:
-            raise ValueError(_("Maximum allowed length for 'label' is 255."))
+            raise exception.LabelTooLong()
 
         if not (kwargs["cidr"] or kwargs["cidr_v6"]):
             raise exception.NetworkNotCreated(req="cidr or cidr_v6")
@@ -1072,10 +1072,22 @@ class NetworkManager(manager.Manager):
             if not kwargs[fld]:
                 raise exception.NetworkNotCreated(req=fld)
 
+        if kwargs["cidr_v6"]:
+            # NOTE(vish): just for validation
+            try:
+                netaddr.IPNetwork(kwargs["cidr_v6"])
+            except netaddr.AddrFormatError:
+                raise exception.InvalidCidr(cidr=kwargs["cidr_v6"])
+
+        if kwargs["cidr"]:
+            try:
+                fixnet = netaddr.IPNetwork(kwargs["cidr"])
+            except netaddr.AddrFormatError:
+                raise exception.InvalidCidr(cidr=kwargs["cidr"])
+
         kwargs["num_networks"] = kwargs["num_networks"] or CONF.num_networks
         if not kwargs["network_size"]:
             if kwargs["cidr"]:
-                fixnet = netaddr.IPNetwork(kwargs["cidr"])
                 each_subnet_size = fixnet.size / kwargs["num_networks"]
                 if each_subnet_size > CONF.network_size:
                     subnet = 32 - int(math.log(CONF.network_size, 2))
@@ -1099,7 +1111,10 @@ class NetworkManager(manager.Manager):
         kwargs["dns1"] = kwargs["dns1"] or CONF.flat_network_dns
 
         if kwargs["fixed_cidr"]:
-            kwargs["fixed_cidr"] = netaddr.IPNetwork(kwargs["fixed_cidr"])
+            try:
+                kwargs["fixed_cidr"] = netaddr.IPNetwork(kwargs["fixed_cidr"])
+            except netaddr.AddrFormatError:
+                raise exception.InvalidCidr(cidr=kwargs["fixed_cidr"])
 
         return self._do_create_networks(context, **kwargs)
 
@@ -1108,10 +1123,10 @@ class NetworkManager(manager.Manager):
         try:
             start = netaddr.IPAddress(ip)
         except netaddr.AddrFormatError:
-            raise ValueError(_("Not a valid IP Address"))
+            raise exception.InvalidAddress(address=ip)
         index = start.value - subnet.value
         if index < 0 or index >= subnet.size:
-            raise ValueError(_("IP not within cidr range"))
+            raise exception.AddressOutOfRange(address=ip, cidr=str(subnet))
         return index
 
     def _do_create_networks(self, context,
@@ -1175,13 +1190,12 @@ class NetworkManager(manager.Manager):
                         subnets_v4.append(next_subnet)
                         subnet = next_subnet
                     else:
-                        raise exception.CidrConflict(_('cidr already in use'))
+                        raise exception.CidrConflict(cidr=subnet,
+                                                     other=subnet)
                 for used_subnet in used_subnets:
                     if subnet in used_subnet:
-                        msg = _('requested cidr (%(cidr)s) conflicts with '
-                                'existing supernet (%(super)s)')
-                        raise exception.CidrConflict(
-                                  msg % {'cidr': subnet, 'super': used_subnet})
+                        raise exception.CidrConflict(cidr=subnet,
+                                                     other=used_subnet)
                     if used_subnet in subnet:
                         next_subnet = find_next(subnet)
                         if next_subnet:
@@ -1189,11 +1203,8 @@ class NetworkManager(manager.Manager):
                             subnets_v4.append(next_subnet)
                             subnet = next_subnet
                         else:
-                            msg = _('requested cidr (%(cidr)s) conflicts '
-                                    'with existing smaller cidr '
-                                    '(%(smaller)s)')
-                            raise exception.CidrConflict(
-                                msg % {'cidr': subnet, 'smaller': used_subnet})
+                            raise exception.CidrConflict(cidr=subnet,
+                                                         other=used_subnet)
 
         networks = network_obj.NetworkList(context=context,
                                            objects=[])
@@ -1223,17 +1234,11 @@ class NetworkManager(manager.Manager):
             if cidr and subnet_v4:
                 current = subnet_v4[1]
                 if allowed_start:
-                    try:
-                        val = self._index_of(subnet_v4, allowed_start)
-                    except ValueError as exc:
-                        raise ValueError('allowed_start: %s' % unicode(exc))
+                    val = self._index_of(subnet_v4, allowed_start)
                     current = netaddr.IPAddress(allowed_start)
                     bottom_reserved = val
                 if allowed_end:
-                    try:
-                        val = self._index_of(subnet_v4, allowed_end)
-                    except ValueError as exc:
-                        raise ValueError('allowed_end: %s' % unicode(exc))
+                    val = self._index_of(subnet_v4, allowed_end)
                     top_reserved = subnet_v4.size - 1 - val
                 net.cidr = str(subnet_v4)
                 net.netmask = str(subnet_v4.netmask)
@@ -1305,8 +1310,7 @@ class NetworkManager(manager.Manager):
             network = network_obj.Network.get_by_cidr(elevated, fixed_range)
 
         if require_disassociated and network.project_id is not None:
-            raise ValueError(_('Network must be disassociated from project %s'
-                               ' before delete') % network.project_id)
+            raise exception.NetworkHasProject(project_id=network.project_id)
         network.destroy()
 
     @property
