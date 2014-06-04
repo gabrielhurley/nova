@@ -3439,7 +3439,7 @@ class LibvirtDriver(driver.ComputeDriver):
             random.source = CONF.libvirt.rng_source
             random.protocol = "tcp"
             random.host = "127.0.0.1"
-            random.service = "8000"
+            random.service = "8001"
             guest.add_device(random)
 
         return guest
