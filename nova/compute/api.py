@@ -125,6 +125,7 @@ CONF.register_opts(compute_opts)
 CONF.import_opt('compute_topic', 'nova.compute.rpcapi')
 CONF.import_opt('enable', 'nova.cells.opts', group='cells')
 CONF.import_opt('default_ephemeral_format', 'nova.virt.driver')
+CONF.import_opt('novncproxy_base_url', 'nova.vnc')
 
 MAX_USERDATA_SIZE = 65535
 QUOTAS = quota.QUOTAS
@@ -2639,7 +2640,10 @@ class API(base.Base):
                 connect_info['host'], connect_info['port'],
                 connect_info['internal_access_path'], instance['uuid'])
 
-        return {'url': connect_info['access_url']}
+        # NOTE(vish): Override the url here so we can avoid reconfiguring the
+        #             compute node if the base url changes.
+        url = '%s?token=%s' % (CONF.novncproxy_base_url, connect_info['token'])
+        return {'url': url}
 
     @check_instance_host
     def get_vnc_connect_info(self, context, instance, console_type):
