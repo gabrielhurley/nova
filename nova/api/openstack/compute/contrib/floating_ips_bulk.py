@@ -63,11 +63,20 @@ class FloatingIPBulkController(object):
 
         for floating_ip in floating_ips:
             instance_uuid = None
+            fixed_ip_addr = None
+            network_id = None
             if floating_ip['fixed_ip_id']:
-                fixed_ip = db.fixed_ip_get(context, floating_ip['fixed_ip_id'])
+                fixed_ip = db.fixed_ip_get(context,
+                                           floating_ip['fixed_ip_id'],
+                                           get_network=True)
+                fixed_ip_addr = fixed_ip['address']
+                network_id = fixed_ip.network['uuid']
                 instance_uuid = fixed_ip['instance_uuid']
 
+
             result = {'address': floating_ip['address'],
+                      'fixed_ip': fixed_ip_addr,
+                      'network_id': network_id,
                       'id': str(floating_ip['id']),
                       'pool': floating_ip['pool'],
                       'interface': floating_ip['interface'],
